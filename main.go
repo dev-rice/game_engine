@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/donutmonger/game_engine/window"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -23,39 +25,6 @@ import (
 
 const windowWidth = 800
 const windowHeight = 600
-
-// Window that holds the opengl context
-type Window struct {
-	height     int
-	width      int
-	glfwWindow *glfw.Window
-}
-
-func newWindow(width int, height int) Window {
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-	glfwWindow, err := glfw.CreateWindow(width, height, "Cube", nil, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	window := Window{
-		height:     height,
-		width:      width,
-		glfwWindow: glfwWindow,
-	}
-
-	return window
-
-}
-
-func (w Window) aspectRatio() float32 {
-	return float32(w.width) / float32(w.height)
-}
 
 func init() {
 	// GLFW event handling must run on the main OS thread
@@ -68,8 +37,8 @@ func main() {
 	}
 	defer glfw.Terminate()
 
-	window := newWindow(windowWidth, windowHeight)
-	window.glfwWindow.MakeContextCurrent()
+	window := window.NewWindow(windowWidth, windowHeight)
+	window.GlfwWindow.MakeContextCurrent()
 
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
@@ -87,7 +56,7 @@ func main() {
 
 	gl.UseProgram(program)
 
-	projection := mgl32.Perspective(mgl32.DegToRad(45.0), window.aspectRatio(), 0.1, 10.0)
+	projection := mgl32.Perspective(mgl32.DegToRad(45.0), window.AspectRatio(), 0.1, 10.0)
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
@@ -136,7 +105,7 @@ func main() {
 	angle := 0.0
 	previousTime := glfw.GetTime()
 
-	for !window.glfwWindow.ShouldClose() {
+	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Update
@@ -159,7 +128,7 @@ func main() {
 		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
 
 		// Maintenance
-		window.glfwWindow.SwapBuffers()
+		window.GlfwWindow.SwapBuffers()
 		glfw.PollEvents()
 	}
 }
@@ -343,17 +312,17 @@ var cubeVertices = []float32{
 	1.0, 1.0, 1.0, 0.0, 1.0,
 }
 
-// Set the working directory to the root of Go package, so that its assets can be accessed.
-func init() {
-	dir, err := importPathToDir("github.com/donutmonger/game_engine")
-	if err != nil {
-		log.Fatalln("Unable to find Go package in your GOPATH, it's needed to load assets:", err)
-	}
-	err = os.Chdir(dir)
-	if err != nil {
-		log.Panicln("os.Chdir:", err)
-	}
-}
+// // Set the working directory to the root of Go package, so that its assets can be accessed.
+// func init() {
+// 	dir, err := importPathToDir("github.com/donutmonger/game_engine")
+// 	if err != nil {
+// 		log.Fatalln("Unable to find Go package in your GOPATH, it's needed to load assets:", err)
+// 	}
+// 	err = os.Chdir(dir)
+// 	if err != nil {
+// 		log.Panicln("os.Chdir:", err)
+// 	}
+// }
 
 // importPathToDir resolves the absolute path from importPath.
 // There doesn't need to be a valid Go package inside that import path,
