@@ -7,7 +7,6 @@ package main
 
 import (
 	"fmt"
-	"go/build"
 	"image"
 	"image/draw"
 	_ "image/png"
@@ -60,9 +59,9 @@ func main() {
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
-	camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-	cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+	view := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	viewUniform := gl.GetUniformLocation(program, gl.Str("view\x00"))
+	gl.UniformMatrix4fv(viewUniform, 1, false, &view[0])
 
 	model := mgl32.Ident4()
 	modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
@@ -88,6 +87,11 @@ func main() {
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices)*4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
+
+	var ebo uint32
+	gl.GenBuffers(1, &ebo)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(cubeElements)*4, gl.Ptr(cubeElements), gl.STATIC_DRAW)
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
@@ -125,7 +129,7 @@ func main() {
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture)
 
-		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+		gl.DrawElements(gl.TRIANGLES, 36, gl.UNSIGNED_INT, gl.PtrOffset(0))
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()
@@ -233,7 +237,7 @@ var vertexShader = `
 #version 330
 
 uniform mat4 projection;
-uniform mat4 camera;
+uniform mat4 view;
 uniform mat4 model;
 
 in vec3 vert;
@@ -243,7 +247,7 @@ out vec2 fragTexCoord;
 
 void main() {
     fragTexCoord = vertTexCoord;
-    gl_Position = projection * camera * model * vec4(vert, 1);
+    gl_Position = projection * view * model * vec4(vert, 1);
 }
 ` + "\x00"
 
@@ -261,76 +265,147 @@ void main() {
 }
 ` + "\x00"
 
-var cubeVertices = []float32{
-	//  X, Y, Z, U, V
-	// Bottom
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-
-	// Top
-	-1.0, 1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Front
-	-1.0, -1.0, 1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Back
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 1.0,
-
-	// Left
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-
-	// Right
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-}
-
-// // Set the working directory to the root of Go package, so that its assets can be accessed.
-// func init() {
-// 	dir, err := importPathToDir("github.com/donutmonger/game_engine")
-// 	if err != nil {
-// 		log.Fatalln("Unable to find Go package in your GOPATH, it's needed to load assets:", err)
-// 	}
-// 	err = os.Chdir(dir)
-// 	if err != nil {
-// 		log.Panicln("os.Chdir:", err)
-// 	}
+// var cubeVertices = []float32{
+// 	//  X, Y, Z, U, V
+// 	// Bottom
+// 	-1.0, -1.0, -1.0, 0.0, 0.0,
+// 	1.0, -1.0, -1.0, 1.0, 0.0,
+// 	-1.0, -1.0, 1.0, 0.0, 1.0,
+// 	1.0, -1.0, -1.0, 1.0, 0.0,
+// 	1.0, -1.0, 1.0, 1.0, 1.0,
+// 	-1.0, -1.0, 1.0, 0.0, 1.0,
+//
+// 	// Top
+// 	-1.0, 1.0, -1.0, 0.0, 0.0,
+// 	-1.0, 1.0, 1.0, 0.0, 1.0,
+// 	1.0, 1.0, -1.0, 1.0, 0.0,
+// 	1.0, 1.0, -1.0, 1.0, 0.0,
+// 	-1.0, 1.0, 1.0, 0.0, 1.0,
+// 	1.0, 1.0, 1.0, 1.0, 1.0,
+//
+// 	// Front
+// 	-1.0, -1.0, 1.0, 1.0, 0.0,
+// 	1.0, -1.0, 1.0, 0.0, 0.0,
+// 	-1.0, 1.0, 1.0, 1.0, 1.0,
+// 	1.0, -1.0, 1.0, 0.0, 0.0,
+// 	1.0, 1.0, 1.0, 0.0, 1.0,
+// 	-1.0, 1.0, 1.0, 1.0, 1.0,
+//
+// 	// Back
+// 	-1.0, -1.0, -1.0, 0.0, 0.0,
+// 	-1.0, 1.0, -1.0, 0.0, 1.0,
+// 	1.0, -1.0, -1.0, 1.0, 0.0,
+// 	1.0, -1.0, -1.0, 1.0, 0.0,
+// 	-1.0, 1.0, -1.0, 0.0, 1.0,
+// 	1.0, 1.0, -1.0, 1.0, 1.0,
+//
+// 	// Left
+// 	-1.0, -1.0, 1.0, 0.0, 1.0,
+// 	-1.0, 1.0, -1.0, 1.0, 0.0,
+// 	-1.0, -1.0, -1.0, 0.0, 0.0,
+// 	-1.0, -1.0, 1.0, 0.0, 1.0,
+// 	-1.0, 1.0, 1.0, 1.0, 1.0,
+// 	-1.0, 1.0, -1.0, 1.0, 0.0,
+//
+// 	// Right
+// 	1.0, -1.0, 1.0, 1.0, 1.0,
+// 	1.0, -1.0, -1.0, 1.0, 0.0,
+// 	1.0, 1.0, -1.0, 0.0, 0.0,
+// 	1.0, -1.0, 1.0, 1.0, 1.0,
+// 	1.0, 1.0, -1.0, 0.0, 0.0,
+// 	1.0, 1.0, 1.0, 0.0, 1.0,
 // }
 
-// importPathToDir resolves the absolute path from importPath.
-// There doesn't need to be a valid Go package inside that import path,
-// but the directory must exist.
-func importPathToDir(importPath string) (string, error) {
-	p, err := build.Import(importPath, "", build.FindOnly)
-	if err != nil {
-		return "", err
-	}
-	return p.Dir, nil
+var cubeVertices = []float32{
+	-0.5, -0.5, -0.5, 0.0, 0.0,
+	0.5, -0.5, -0.5, 1.0, 0.0,
+	0.5, 0.5, -0.5, 1.0, 1.0,
+	-0.5, 0.5, -0.5, 0.0, 1.0,
+
+	-0.5, -0.5, 0.5, 0.0, 0.0,
+	0.5, -0.5, 0.5, 1.0, 0.0,
+	0.5, 0.5, 0.5, 1.0, 1.0,
+	-0.5, 0.5, 0.5, 0.0, 1.0,
+
+	-0.5, 0.5, 0.5, 1.0, 0.0,
+	-0.5, 0.5, -0.5, 1.0, 1.0,
+	-0.5, -0.5, -0.5, 0.0, 1.0,
+	-0.5, -0.5, 0.5, 0.0, 0.0,
+
+	0.5, 0.5, 0.5, 1.0, 0.0,
+	0.5, 0.5, -0.5, 1.0, 1.0,
+	0.5, -0.5, -0.5, 0.0, 1.0,
+	0.5, -0.5, 0.5, 0.0, 0.0,
+
+	-0.5, -0.5, -0.5, 0.0, 1.0,
+	0.5, -0.5, -0.5, 1.0, 1.0,
+	0.5, -0.5, 0.5, 1.0, 0.0,
+	-0.5, -0.5, 0.5, 0.0, 0.0,
+
+	-0.5, 0.5, -0.5, 0.0, 1.0,
+	0.5, 0.5, -0.5, 1.0, 1.0,
+	0.5, 0.5, 0.5, 1.0, 0.0,
+	-0.5, 0.5, 0.5, 0.0, 0.0,
 }
+var cubeElements = []uint32{
+	0, 1, 3,
+	1, 2, 3,
+
+	4, 5, 7,
+	5, 6, 7,
+
+	8, 9, 11,
+	9, 10, 11,
+
+	12, 13, 15,
+	13, 14, 15,
+
+	16, 17, 19,
+	17, 18, 19,
+
+	20, 21, 23,
+	21, 22, 23,
+}
+
+// From C++ code
+// Model::Model(){
+
+//      glGenVertexArrays(1, &vao);
+//      glBindVertexArray(vao);
+//
+//      glGenBuffers(1, &vbo);               // Generate 1 buffer
+//      glBindBuffer(GL_ARRAY_BUFFER, vbo);  // Make vbo the active array buffer
+//      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+//      glGenBuffers(1, &ebo);
+//      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+//      glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+//
+//      glGenTextures(1, &texture);
+//
+//      GLuint vertex_shader = ShaderLoader::loadVertexShader("shaders/vertex_shader.glsl");
+//      GLuint fragment_shader = ShaderLoader::loadFragmentShader("shaders/fragment_shader.glsl");
+//      shader_program = ShaderLoader::combineShaderProgram(vertex_shader, fragment_shader);
+//
+//      // Get the reference to the "position" attribute defined in
+//      // the vertex shader
+//      GLint posAttrib = glGetAttribLocation(shader_program, "position");
+//      glEnableVertexAttribArray(posAttrib);
+//      // Load the position attributes from our array with width 3. The position
+//      // values start at index 0. Tell it to load 2 values
+//      glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE,
+//                             8*sizeof(float), 0);
+//
+//      GLint colAttrib = glGetAttribLocation(shader_program, "color");
+//      glEnableVertexAttribArray(colAttrib);
+//      // Load the color pointer from our array with width 3. The color values
+//      // start at index 2. Tell it to load 3 value
+//      glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
+//                             8*sizeof(float), (void*)(3*sizeof(float)));
+//
+//      // Link the texture coordinates to the shader.
+//      GLint texAttrib = glGetAttribLocation(shader_program, "texcoord");
+//      glEnableVertexAttribArray(texAttrib);
+//      glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+//                             8*sizeof(float), (void*)(6*sizeof(float)));
+// }
