@@ -17,19 +17,13 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"time"
+	"github.com/donutmonger/game_engine/rts/resources"
+	"github.com/donutmonger/game_engine/rts/unit"
 )
 
 const windowWidth = 800
 const windowHeight = 600
-
-type Entity struct {
-	id int64
-}
-
-type PositionComponent struct {
-	x float64
-	y float64
-}
 
 func init() {
 	// GLFW event handling must run on the main OS thread
@@ -70,8 +64,13 @@ func main() {
 
 	gl.BindFragDataLocation(shaderProgram.GLid, 0, gl.Str("outputColor\x00"))
 
-	// Load the texture
-	player_texture, err := texture.NewTextureFromFile("enemy1.png")
+	// Load the textures
+	player_texture, err := texture.NewTextureFromFile("stone.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	enemyTexture, err := texture.NewTextureFromFile("enemy1.png")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -102,6 +101,35 @@ func main() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
+	resources := resources.NewResources(0)
+
+	go func() {
+		tickChan := time.NewTicker(time.Second).C
+
+		for {
+			select {
+			case <- tickChan:
+				resources.AddGold(10)
+				fmt.Printf("Resources: %d\n", resources.GetGold())
+			}
+		}
+	}()
+
+	enemyUnit := unit.Unit{
+		Position: mgl32.Vec2{0.5, 0.1},
+		Scale: mgl32.Vec2{0.1, 0.15},
+		Sprite: enemyTexture,
+		ShaderProgram: shaderProgram,
+	}
+
+	enemyUnit2 := unit.Unit{
+		Position: mgl32.Vec2{-0.5, -0.4},
+		Scale: mgl32.Vec2{0.1, 0.15},
+		Sprite: enemyTexture,
+		ShaderProgram: shaderProgram,
+	}
+
+
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -117,6 +145,9 @@ func main() {
 		player_texture.Bind2D()
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 6)
+
+		enemyUnit.Draw()
+		enemyUnit2.Draw()
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()
