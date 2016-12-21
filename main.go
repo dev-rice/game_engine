@@ -99,10 +99,8 @@ func main() {
 	gl.Disable(gl.CULL_FACE)
 	gl.ClearColor(0.2, 0.2, 0.4, 0.0)
 
-	// gl.Enable(gl.BLEND)
-	// gl.BlendFunc(gl.ONE_MIINUS_SRC_ALPHA, gl.SRC_ALPHA)
-	// gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	// gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
