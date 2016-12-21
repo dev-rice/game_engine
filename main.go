@@ -22,6 +22,15 @@ import (
 const windowWidth = 800
 const windowHeight = 600
 
+type Entity struct {
+	id int64
+}
+
+type PositionComponent struct {
+	x float64
+	y float64
+}
+
 func init() {
 	// GLFW event handling must run on the main OS thread
 	runtime.LockOSThread()
@@ -45,11 +54,11 @@ func main() {
 	fmt.Println("OpenGL version", version)
 
 	// Configure the vertex and fragment shaders
-	vertexShader, err := shader.NewVertexShader(vertexShaderSource)
+	vertexShader, err := shader.NewVertexShaderFromFile("res/shaders/basic_sprite.vs")
 	if err != nil {
 		panic(err)
 	}
-	fragmentShader, err := shader.NewFragmentShader(fragmentShaderSource)
+	fragmentShader, err := shader.NewFragmentShaderFromFile("res/shaders/basic_sprite.fs")
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +97,12 @@ func main() {
 	// Configure global settings
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
-	gl.ClearColor(0.2, 0.2, 0.8, 0.0)
+	gl.ClearColor(0.2, 0.2, 0.4, 0.0)
+
+	// gl.Enable(gl.BLEND)
+	// gl.BlendFunc(gl.ONE_MIINUS_SRC_ALPHA, gl.SRC_ALPHA)
+	// gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	// gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -97,7 +111,7 @@ func main() {
 		shaderProgram.Use()
 		gl.BindVertexArray(vao)
 
-		model := mgl32.Ident3()
+		model := mgl32.Scale2D(0.1, 0.15)
 		modelUniform := shaderProgram.GetUniformLocation("transformation")
 		gl.UniformMatrix3fv(modelUniform, 1, false, &model[0])
 
@@ -111,40 +125,6 @@ func main() {
 		glfw.PollEvents()
 	}
 }
-
-var vertexShaderSource = `
-#version 330
-
-in vec2 position;
-in vec2 texcoord;
-
-out vec2 Texcoord;
-
-uniform mat3 transformation;
-
-void main() {
-    Texcoord = vec2(texcoord.x, 1 - texcoord.y);
-    vec3 position_temp = vec3(position, 1.0) * transformation;
-    gl_Position = vec4(position_temp.xy, 0.0, 1.0);
-}
-` + "\x00"
-
-var fragmentShaderSource = `
-#version 330
-
-in vec2 Texcoord;
-
-out vec4 outputColor;
-
-uniform float opacity;
-uniform sampler2D base_texture;
-
-void main() {
-    vec4 texel = textureOffset(base_texture, Texcoord, ivec2(-0.5 , -0.5));
-
-    outputColor = vec4(texel.rgb, opacity * texel.a);
-}
-` + "\x00"
 
 var flatMeshVertices = []float32{
 	-1.0, 1.0, 0.0, 1.0,

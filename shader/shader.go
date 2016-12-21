@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"strings"
+	"io/ioutil"
 )
 
 type ShaderProgram struct {
@@ -11,7 +12,6 @@ type ShaderProgram struct {
 }
 
 func NewShaderProgram(vertexShader *VertexShader, fragmentShader *FragmentShader) (*ShaderProgram, error) {
-
 	program_id := gl.CreateProgram()
 	gl.AttachShader(program_id, vertexShader.GLid)
 	gl.AttachShader(program_id, fragmentShader.GLid)
@@ -63,6 +63,16 @@ func NewVertexShader(source string) (*VertexShader, error) {
 	return &VertexShader{GLid: id}, nil
 }
 
+func NewVertexShaderFromFile(filename string) (*VertexShader, error) {
+	source, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	source = append(source, byte(0))
+
+	return NewVertexShader(string(source))
+}
+
 type FragmentShader struct {
 	GLid uint32
 }
@@ -74,6 +84,16 @@ func NewFragmentShader(source string) (*FragmentShader, error) {
 	}
 
 	return &FragmentShader{GLid: id}, nil
+}
+
+func NewFragmentShaderFromFile(filename string) (*FragmentShader, error) {
+	source, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	source = append(source, byte(0))
+
+	return NewFragmentShader(string(source))
 }
 
 func compileShader(source string, shaderType uint32) (uint32, error) {
