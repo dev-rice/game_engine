@@ -7,12 +7,15 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 
 	"math/rand"
+	"github.com/go-gl/glfw/v3.2/glfw"
+
 )
 
 var COMPONENT_NONE uint64 = 0
 var COMPONENT_POSITION uint64 = 1 << 0
 var COMPONENT_SCALE uint64 = 1 << 1
 var COMPONENT_SPRITE uint64 = 1 << 2
+var COMPONENT_INPUT uint64 = 1 << 3
 
 type PositionComponent struct {
 	X float32
@@ -28,11 +31,16 @@ type SpriteComponent struct {
 	Texture texture.Texture
 }
 
+type InputComponent struct {
+	OnPress func()
+}
+
 type World struct {
 	mask []uint64
 	positionComponents []PositionComponent
 	scaleComponents []ScaleComponent
 	spriteComponents []SpriteComponent
+	inputComponents []InputComponent
 
 	maxEntities uint64
 }
@@ -43,6 +51,7 @@ func NewWorld(maxEntities uint64) World {
 		positionComponents: make([]PositionComponent, maxEntities),
 		scaleComponents: make([]ScaleComponent, maxEntities),
 		spriteComponents: make([]SpriteComponent, maxEntities),
+		inputComponents: make([]InputComponent, maxEntities),
 		maxEntities: maxEntities,
 	}
 }
@@ -61,6 +70,8 @@ func (w *World) DestroyEntity(entity uint64) {
 	w.mask[entity] = COMPONENT_NONE
 }
 
+// The Draw System
+// A system is just a function and a mask on which it operates
 func (w World) Draw(shader *shader.ShaderProgram) {
 	drawableMask := COMPONENT_POSITION | COMPONENT_SCALE | COMPONENT_SPRITE
 	for entity := uint64(0); entity < w.maxEntities; entity++ {
@@ -86,6 +97,27 @@ func (w World) Draw(shader *shader.ShaderProgram) {
 	}
 }
 
+func (w *World) InputSystem(window *glfw.Window) {
+	inputMask := COMPONENT_INPUT
+	for entity := uint64(0); entity < w.maxEntities; entity++ {
+		if (w.mask[entity] & inputMask) == inputMask {
+			if (window.GetKey(glfw.KeyB) == glfw.Press) {
+				w.inputComponents[entity].OnPress()
+			}
+		}
+	}
+}
+
+func (w *World) CreateBarracks(t *texture.Texture) uint64 {
+	barracks := w.CreateEntity()
+	w.mask[barracks] = COMPONENT_INPUT
+	w.inputComponents[barracks] = InputComponent{OnPress: func() {
+		w.CreateEnemy(t)
+	}}
+
+	return barracks
+}
+
 func (w *World) CreateEnemy(t *texture.Texture) uint64 {
 	enemy := w.CreateEntity()
 	w.mask[enemy] = COMPONENT_POSITION | COMPONENT_SCALE | COMPONENT_SPRITE
@@ -94,6 +126,11 @@ func (w *World) CreateEnemy(t *texture.Texture) uint64 {
 	w.spriteComponents[enemy] = SpriteComponent{*t}
 
 	return enemy
+}
+
+
+func randomFloatBetween(min float32, max float32) float32 {
+	return rand.Float32()
 }
 
 func randomFloatInGLScreenSpace() float32 {

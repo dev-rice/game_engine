@@ -98,9 +98,10 @@ func main() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	w := world.NewWorld(100)
-	for i := 0; i < 99; i++ {
-		w.CreateEnemy(enemyTexture)
-	}
+	w.CreateBarracks(enemyTexture)
+	//for i := 0; i < 9; i++ {
+	//	w.CreateEnemy(enemyTexture)
+	//}
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -110,6 +111,7 @@ func main() {
 		gl.BindVertexArray(vao)
 
 		w.Draw(shaderProgram)
+		w.InputSystem(window.GlfwWindow)
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()
