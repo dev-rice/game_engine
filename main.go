@@ -16,10 +16,10 @@ import (
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 	"time"
+	"github.com/donutmonger/game_engine/world"
 	"github.com/donutmonger/game_engine/rts/resources"
-	"github.com/donutmonger/game_engine/rts/unit"
+	"math/rand"
 )
 
 const windowWidth = 800
@@ -31,6 +31,8 @@ func init() {
 }
 
 func main() {
+	rand.Seed(int64(time.Now().Nanosecond()))
+
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}
@@ -64,12 +66,7 @@ func main() {
 
 	gl.BindFragDataLocation(shaderProgram.GLid, 0, gl.Str("outputColor\x00"))
 
-	// Load the textures
-	player_texture, err := texture.NewTextureFromFile("stone.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	// Load the texture
 	enemyTexture, err := texture.NewTextureFromFile("enemy1.png")
 	if err != nil {
 		log.Fatalln(err)
@@ -101,8 +98,12 @@ func main() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	resources := resources.NewResources(0)
+	w := world.NewWorld(100)
+	for i := 0; i < 99; i++ {
+		w.CreateEnemy(enemyTexture)
+	}
 
+	resources := resources.NewResources(0)
 	go func() {
 		tickChan := time.NewTicker(time.Second).C
 
@@ -115,21 +116,6 @@ func main() {
 		}
 	}()
 
-	enemyUnit := unit.Unit{
-		Position: mgl32.Vec2{0.5, 0.1},
-		Scale: mgl32.Vec2{0.1, 0.15},
-		Sprite: enemyTexture,
-		ShaderProgram: shaderProgram,
-	}
-
-	enemyUnit2 := unit.Unit{
-		Position: mgl32.Vec2{-0.5, -0.4},
-		Scale: mgl32.Vec2{0.1, 0.15},
-		Sprite: enemyTexture,
-		ShaderProgram: shaderProgram,
-	}
-
-
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -137,17 +123,7 @@ func main() {
 		shaderProgram.Use()
 		gl.BindVertexArray(vao)
 
-		model := mgl32.Scale2D(0.1, 0.15)
-		modelUniform := shaderProgram.GetUniformLocation("transformation")
-		gl.UniformMatrix3fv(modelUniform, 1, false, &model[0])
-
-		gl.ActiveTexture(gl.TEXTURE0)
-		player_texture.Bind2D()
-
-		gl.DrawArrays(gl.TRIANGLES, 0, 6)
-
-		enemyUnit.Draw()
-		enemyUnit2.Draw()
+		w.Draw(shaderProgram)
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()
