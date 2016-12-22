@@ -67,6 +67,7 @@ func (w World) Draw(shader *shader.ShaderProgram) {
 		if (w.mask[entity] & drawableMask) == drawableMask {
 			position := w.positionComponents[entity]
 			scale := w.scaleComponents[entity]
+
 			model := mgl32.Mat3FromCols(
 				mgl32.Vec3{scale.X, 0      , position.X},
 				mgl32.Vec3{0      , scale.Y, position.Y},

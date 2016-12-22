@@ -18,7 +18,6 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"time"
 	"github.com/donutmonger/game_engine/world"
-	"github.com/donutmonger/game_engine/rts/resources"
 	"math/rand"
 )
 
@@ -102,19 +101,6 @@ func main() {
 	for i := 0; i < 99; i++ {
 		w.CreateEnemy(enemyTexture)
 	}
-
-	resources := resources.NewResources(0)
-	go func() {
-		tickChan := time.NewTicker(time.Second).C
-
-		for {
-			select {
-			case <- tickChan:
-				resources.AddGold(10)
-				fmt.Printf("Resources: %d\n", resources.GetGold())
-			}
-		}
-	}()
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
