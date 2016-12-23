@@ -14,11 +14,11 @@ import (
 	"github.com/donutmonger/game_engine/texture"
 	"github.com/donutmonger/game_engine/window"
 
+	"github.com/donutmonger/game_engine/world"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"time"
-	"github.com/donutmonger/game_engine/world"
 	"math/rand"
+	"time"
 )
 
 const windowWidth = 800
@@ -65,12 +65,6 @@ func main() {
 
 	gl.BindFragDataLocation(shaderProgram.GLid, 0, gl.Str("outputColor\x00"))
 
-	// Load the texture
-	enemyTexture, err := texture.NewTextureFromFile("enemy1.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	// Configure the vertex data
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
@@ -97,11 +91,14 @@ func main() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	w := world.NewWorld(100)
-	w.CreateBarracks(enemyTexture)
-	//for i := 0; i < 9; i++ {
-	//	w.CreateEnemy(enemyTexture)
-	//}
+	w := world.NewWorld(1000)
+
+	// Load the texture
+	spaceshipTexture, err := texture.NewTextureFromFile("res/textures/spaceship.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.CreatePlayerSpaceship(spaceshipTexture)
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -111,7 +108,8 @@ func main() {
 		gl.BindVertexArray(vao)
 
 		w.Draw(shaderProgram)
-		w.InputSystem(window.GlfwWindow)
+		w.PlayerInputSystem(window.GlfwWindow)
+		w.PhysicsSystem(0.0166667)
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()
