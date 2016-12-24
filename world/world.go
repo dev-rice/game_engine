@@ -197,7 +197,6 @@ func (w *World) PlayerInputSystem(window *glfw.Window) {
 			}
 
 			if window.GetKey(glfw.KeySpace) == glfw.Press {
-				// FIRE TEH LAZ0RRS
 				w.particleEmitterComponents[entity].fireRequested = true
 			} else {
 				w.particleEmitterComponents[entity].fireRequested = false
@@ -227,6 +226,17 @@ func (w *World) CreatePlayerSpaceship(t *texture.Texture, laserTexture *texture.
 	w.spriteComponents[entity] = SpriteComponent{Texture: *t}
 	w.playerStatsComponents[entity] = PlayerStatsComponent{Speed: 1}
 	w.particleEmitterComponents[entity] = ParticleEmitterComponent{Continuous: false, MaxFiresPerSecond: 5, ParticleTexture: *laserTexture, lastFireTime: time.Now(), fireRequested: false}
+
+	return entity
+}
+
+func (w *World) CreateEnemyFighter(t *texture.Texture) uint64 {
+	entity := w.CreateEntity()
+	w.mask[entity] = COMPONENT_POSITION | COMPONENT_VELOCITY | COMPONENT_SCALE | COMPONENT_SPRITE
+	w.positionComponents[entity] = PositionComponent{X: -0.5, Y: 0.6}
+	w.velocityComponents[entity] = VelocityComponent{X: 0, Y: 0}
+	w.scaleComponents[entity] = ScaleComponent{X: 0.0375, Y: 0.05}
+	w.spriteComponents[entity] = SpriteComponent{Texture: *t}
 
 	return entity
 }

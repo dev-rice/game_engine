@@ -17,7 +17,7 @@ func NewWindow(width int, height int) Window {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	glfwWindow, err := glfw.CreateWindow(width, height, "Cube", nil, nil)
+	glfwWindow, err := glfw.CreateWindow(width, height, "Space Fight", nil, nil)
 	if err != nil {
 		panic(err)
 	}

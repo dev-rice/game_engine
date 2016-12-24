@@ -91,7 +91,7 @@ func main() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	w := world.NewWorld(1000)
+	w := world.NewWorld(10000)
 
 	// Load the texture
 	spaceshipTexture, err := texture.NewTextureFromFile("res/textures/spaceship.png")
@@ -104,7 +104,14 @@ func main() {
 	}
 	w.CreatePlayerSpaceship(spaceshipTexture, lazorTexture)
 
+	enemyTexture, err := texture.NewTextureFromFile("res/textures/enemy_fighter.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.CreateEnemyFighter(enemyTexture)
+
 	for !window.GlfwWindow.ShouldClose() {
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Render
