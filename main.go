@@ -86,7 +86,7 @@ func main() {
 	// Configure global settings
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
-	gl.ClearColor(0.2, 0.2, 0.4, 0.0)
+	gl.ClearColor(0.1, 0.1, 0.1, 0.0)
 
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -115,6 +115,7 @@ func main() {
 		w.PlayerInputSystem(window.GlfwWindow)
 		w.PhysicsSystem(0.0166667)
 		w.ParticleEmitterSystem()
+		w.ParticleCleanupSystem()
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()

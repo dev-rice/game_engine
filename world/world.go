@@ -17,6 +17,7 @@ var COMPONENT_SCALE uint64 = 1 << 2
 var COMPONENT_SPRITE uint64 = 1 << 3
 var COMPONENT_PLAYER uint64 = 1 << 4
 var COMPONENT_PARTICLE_EMITTER uint64 = 1 << 5
+var COMPONENT_PARTICLE uint64 = 1 << 6
 
 type PositionComponent struct {
 	X float32
@@ -49,6 +50,10 @@ type ParticleEmitterComponent struct {
 	fireRequested     bool
 }
 
+type ParticleComponent struct {
+	DestroyWhenOffScreen bool
+}
+
 type World struct {
 	mask                      []uint64
 	positionComponents        []PositionComponent
@@ -57,6 +62,7 @@ type World struct {
 	spriteComponents          []SpriteComponent
 	playerStatsComponents     []PlayerStatsComponent
 	particleEmitterComponents []ParticleEmitterComponent
+	particleComponents        []ParticleComponent
 
 	maxEntities uint64
 }
@@ -70,6 +76,7 @@ func NewWorld(maxEntities uint64) World {
 		spriteComponents:          make([]SpriteComponent, maxEntities),
 		playerStatsComponents:     make([]PlayerStatsComponent, maxEntities),
 		particleEmitterComponents: make([]ParticleEmitterComponent, maxEntities),
+		particleComponents:        make([]ParticleComponent, maxEntities),
 		maxEntities:               maxEntities,
 	}
 }
@@ -150,6 +157,23 @@ func (w *World) ParticleEmitterSystem() {
 	}
 }
 
+func (w *World) ParticleCleanupSystem() {
+	mask := COMPONENT_PARTICLE | COMPONENT_POSITION
+	for entity := uint64(0); entity < w.maxEntities; entity++ {
+		if w.entitySatisfiesMask(entity, mask) {
+			if w.particleComponents[entity].DestroyWhenOffScreen {
+				if isOffScreen(w.positionComponents[entity]) {
+					w.DestroyEntity(entity)
+				}
+			}
+		}
+	}
+}
+
+func isOffScreen(p PositionComponent) bool {
+	return p.X > 1.0 || p.X < -1.0 || p.Y > 1.0 || p.Y < -1.0
+}
+
 func (w *World) PlayerInputSystem(window *glfw.Window) {
 	playerMask := COMPONENT_VELOCITY | COMPONENT_PLAYER | COMPONENT_PARTICLE_EMITTER
 	for entity := uint64(0); entity < w.maxEntities; entity++ {
@@ -184,11 +208,12 @@ func (w *World) PlayerInputSystem(window *glfw.Window) {
 
 func (w *World) CreateLaser(position PositionComponent, texture texture.Texture) uint64 {
 	entity := w.CreateEntity()
-	w.mask[entity] = COMPONENT_POSITION | COMPONENT_SCALE | COMPONENT_VELOCITY | COMPONENT_SPRITE
+	w.mask[entity] = COMPONENT_POSITION | COMPONENT_SCALE | COMPONENT_VELOCITY | COMPONENT_SPRITE | COMPONENT_PARTICLE
 	w.positionComponents[entity] = position
 	w.velocityComponents[entity] = VelocityComponent{X: 0, Y: 2}
 	w.scaleComponents[entity] = ScaleComponent{X: 0.0025, Y: 0.0075}
 	w.spriteComponents[entity] = SpriteComponent{Texture: texture}
+	w.particleComponents[entity] = ParticleComponent{DestroyWhenOffScreen: true}
 
 	return entity
 }
