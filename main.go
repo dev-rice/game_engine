@@ -98,7 +98,11 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	w.CreatePlayerSpaceship(spaceshipTexture)
+	lazorTexture, err := texture.NewTextureFromFile("res/textures/red.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.CreatePlayerSpaceship(spaceshipTexture, lazorTexture)
 
 	for !window.GlfwWindow.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -110,6 +114,7 @@ func main() {
 		w.Draw(shaderProgram)
 		w.PlayerInputSystem(window.GlfwWindow)
 		w.PhysicsSystem(0.0166667)
+		w.ParticleEmitterSystem()
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()

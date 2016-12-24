@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"time"
 )
 
 var COMPONENT_NONE uint64 = 0
@@ -15,6 +16,7 @@ var COMPONENT_VELOCITY uint64 = 1 << 1
 var COMPONENT_SCALE uint64 = 1 << 2
 var COMPONENT_SPRITE uint64 = 1 << 3
 var COMPONENT_PLAYER uint64 = 1 << 4
+var COMPONENT_PARTICLE_EMITTER uint64 = 1 << 5
 
 type PositionComponent struct {
 	X float32
@@ -35,30 +37,40 @@ type SpriteComponent struct {
 	Texture texture.Texture
 }
 
-type PlayerComponent struct {
+type PlayerStatsComponent struct {
 	Speed float32
 }
 
+type ParticleEmitterComponent struct {
+	Continuous        bool
+	MaxFiresPerSecond float32
+	ParticleTexture   texture.Texture
+	lastFireTime      time.Time
+	fireRequested     bool
+}
+
 type World struct {
-	mask               []uint64
-	positionComponents []PositionComponent
-	velocityComponents []VelocityComponent
-	scaleComponents    []ScaleComponent
-	spriteComponents   []SpriteComponent
-	playerComponents   []PlayerComponent
+	mask                      []uint64
+	positionComponents        []PositionComponent
+	velocityComponents        []VelocityComponent
+	scaleComponents           []ScaleComponent
+	spriteComponents          []SpriteComponent
+	playerStatsComponents     []PlayerStatsComponent
+	particleEmitterComponents []ParticleEmitterComponent
 
 	maxEntities uint64
 }
 
 func NewWorld(maxEntities uint64) World {
 	return World{
-		mask:               make([]uint64, maxEntities),
-		positionComponents: make([]PositionComponent, maxEntities),
-		velocityComponents: make([]VelocityComponent, maxEntities),
-		scaleComponents:    make([]ScaleComponent, maxEntities),
-		spriteComponents:   make([]SpriteComponent, maxEntities),
-		playerComponents:   make([]PlayerComponent, maxEntities),
-		maxEntities:        maxEntities,
+		mask:                      make([]uint64, maxEntities),
+		positionComponents:        make([]PositionComponent, maxEntities),
+		velocityComponents:        make([]VelocityComponent, maxEntities),
+		scaleComponents:           make([]ScaleComponent, maxEntities),
+		spriteComponents:          make([]SpriteComponent, maxEntities),
+		playerStatsComponents:     make([]PlayerStatsComponent, maxEntities),
+		particleEmitterComponents: make([]ParticleEmitterComponent, maxEntities),
+		maxEntities:               maxEntities,
 	}
 }
 
@@ -121,11 +133,28 @@ func (w *World) PhysicsSystem(dt float32) {
 	}
 }
 
+func (w *World) ParticleEmitterSystem() {
+	mask := COMPONENT_POSITION | COMPONENT_PARTICLE_EMITTER
+	for entity := uint64(0); entity < w.maxEntities; entity++ {
+		if w.entitySatisfiesMask(entity, mask) {
+			p := &w.particleEmitterComponents[entity]
+			if p.Continuous || p.fireRequested {
+				minTime := 1.0 / p.MaxFiresPerSecond
+				timeSinceLast := float32(time.Since(p.lastFireTime).Seconds())
+				if timeSinceLast >= minTime {
+					w.CreateLaser(w.positionComponents[entity], p.ParticleTexture)
+					p.lastFireTime = time.Now()
+				}
+			}
+		}
+	}
+}
+
 func (w *World) PlayerInputSystem(window *glfw.Window) {
-	playerMask := COMPONENT_VELOCITY | COMPONENT_PLAYER
+	playerMask := COMPONENT_VELOCITY | COMPONENT_PLAYER | COMPONENT_PARTICLE_EMITTER
 	for entity := uint64(0); entity < w.maxEntities; entity++ {
 		if w.entitySatisfiesMask(entity, playerMask) {
-			speed := w.playerComponents[entity].Speed
+			speed := w.playerStatsComponents[entity].Speed
 
 			w.velocityComponents[entity].X = 0
 			w.velocityComponents[entity].Y = 0
@@ -142,33 +171,37 @@ func (w *World) PlayerInputSystem(window *glfw.Window) {
 			if window.GetKey(glfw.KeyS) == glfw.Press {
 				w.velocityComponents[entity].Y = -speed
 			}
+
 			if window.GetKey(glfw.KeySpace) == glfw.Press {
-				// Fire the guns
-				w.CreateBullet(w.positionComponents[entity], w.spriteComponents[entity])
+				// FIRE TEH LAZ0RRS
+				w.particleEmitterComponents[entity].fireRequested = true
+			} else {
+				w.particleEmitterComponents[entity].fireRequested = false
 			}
 		}
 	}
 }
 
-func (w *World) CreateBullet(position PositionComponent, sprite SpriteComponent) uint64 {
+func (w *World) CreateLaser(position PositionComponent, texture texture.Texture) uint64 {
 	entity := w.CreateEntity()
 	w.mask[entity] = COMPONENT_POSITION | COMPONENT_SCALE | COMPONENT_VELOCITY | COMPONENT_SPRITE
 	w.positionComponents[entity] = position
 	w.velocityComponents[entity] = VelocityComponent{X: 0, Y: 2}
-	w.scaleComponents[entity] = ScaleComponent{X: 0.005, Y: 0.015}
-	w.spriteComponents[entity] = sprite
+	w.scaleComponents[entity] = ScaleComponent{X: 0.0025, Y: 0.0075}
+	w.spriteComponents[entity] = SpriteComponent{Texture: texture}
 
 	return entity
 }
 
-func (w *World) CreatePlayerSpaceship(t *texture.Texture) uint64 {
+func (w *World) CreatePlayerSpaceship(t *texture.Texture, laserTexture *texture.Texture) uint64 {
 	entity := w.CreateEntity()
-	w.mask[entity] = COMPONENT_POSITION | COMPONENT_VELOCITY | COMPONENT_SCALE | COMPONENT_SPRITE | COMPONENT_PLAYER
+	w.mask[entity] = COMPONENT_POSITION | COMPONENT_VELOCITY | COMPONENT_SCALE | COMPONENT_SPRITE | COMPONENT_PLAYER | COMPONENT_PARTICLE_EMITTER
 	w.positionComponents[entity] = PositionComponent{X: 0, Y: -0.9}
 	w.velocityComponents[entity] = VelocityComponent{X: 0, Y: 0}
 	w.scaleComponents[entity] = ScaleComponent{X: 0.05, Y: 0.0525}
 	w.spriteComponents[entity] = SpriteComponent{Texture: *t}
-	w.playerComponents[entity] = PlayerComponent{Speed: 1}
+	w.playerStatsComponents[entity] = PlayerStatsComponent{Speed: 1}
+	w.particleEmitterComponents[entity] = ParticleEmitterComponent{Continuous: false, MaxFiresPerSecond: 5, ParticleTexture: *laserTexture, lastFireTime: time.Now(), fireRequested: false}
 
 	return entity
 }
