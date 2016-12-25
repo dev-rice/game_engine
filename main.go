@@ -14,6 +14,7 @@ import (
 	"github.com/donutmonger/game_engine/texture"
 	"github.com/donutmonger/game_engine/window"
 
+	"github.com/donutmonger/game_engine/systems"
 	"github.com/donutmonger/game_engine/world"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -109,6 +110,16 @@ func main() {
 		log.Fatalln(err)
 	}
 	w.CreateEnemyFighter(enemyTexture)
+	w.CreateEnemyFighter(enemyTexture)
+	w.CreateEnemyFighter(enemyTexture)
+	w.CreateEnemyFighter(enemyTexture)
+
+	allSystems := make([]systems.System, 0)
+	allSystems = append(allSystems, systems.NewRenderSystem(*shaderProgram))
+	allSystems = append(allSystems, systems.NewMovementSystem())
+	allSystems = append(allSystems, systems.NewPlayerInputSystem(window.GlfwWindow))
+	allSystems = append(allSystems, systems.NewParticleCleanupSystem())
+	allSystems = append(allSystems, systems.NewParticleEmitterSystem())
 
 	for !window.GlfwWindow.ShouldClose() {
 
@@ -118,11 +129,9 @@ func main() {
 		shaderProgram.Use()
 		gl.BindVertexArray(vao)
 
-		w.Draw(shaderProgram)
-		w.PlayerInputSystem(window.GlfwWindow)
-		w.PhysicsSystem(0.0166667)
-		w.ParticleEmitterSystem()
-		w.ParticleCleanupSystem()
+		for _, system := range allSystems {
+			system.Update(&w)
+		}
 
 		// Maintenance
 		window.GlfwWindow.SwapBuffers()

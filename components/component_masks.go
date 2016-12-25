@@ -1,0 +1,10 @@
+package components
+
+var COMPONENT_NONE uint64 = 0
+var COMPONENT_POSITION uint64 = 1 << 0
+var COMPONENT_VELOCITY uint64 = 1 << 1
+var COMPONENT_SCALE uint64 = 1 << 2
+var COMPONENT_SPRITE uint64 = 1 << 3
+var COMPONENT_PLAYER uint64 = 1 << 4
+var COMPONENT_PARTICLE_EMITTER uint64 = 1 << 5
+var COMPONENT_PARTICLE uint64 = 1 << 6
