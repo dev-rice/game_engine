@@ -1,7 +1,6 @@
 package systems
 
 import (
-	"fmt"
 	"github.com/donutmonger/game_engine/components"
 	"github.com/donutmonger/game_engine/world"
 	"time"
