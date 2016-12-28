@@ -66,24 +66,6 @@ func main() {
 
 	gl.BindFragDataLocation(shaderProgram.GLid, 0, gl.Str("outputColor\x00"))
 
-	// Configure the vertex data
-	var vao uint32
-	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao)
-
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(flatMeshVertices)*4, gl.Ptr(flatMeshVertices), gl.STATIC_DRAW)
-
-	posAttrib := uint32(shaderProgram.GetAttribLocation("position"))
-	gl.EnableVertexAttribArray(posAttrib)
-	gl.VertexAttribPointer(posAttrib, 2, gl.FLOAT, false, 4*4, gl.PtrOffset(0))
-
-	texcoordAttrib := uint32(shaderProgram.GetAttribLocation("texcoord"))
-	gl.EnableVertexAttribArray(texcoordAttrib)
-	gl.VertexAttribPointer(texcoordAttrib, 2, gl.FLOAT, false, 4*4, gl.PtrOffset(2*4))
-
 	// Configure global settings
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
@@ -110,9 +92,6 @@ func main() {
 		log.Fatalln(err)
 	}
 	w.CreateEnemyFighter(enemyTexture)
-	w.CreateEnemyFighter(enemyTexture)
-	w.CreateEnemyFighter(enemyTexture)
-	w.CreateEnemyFighter(enemyTexture)
 
 	allSystems := make([]systems.System, 0)
 	allSystems = append(allSystems, systems.NewRenderSystem(*shaderProgram))
@@ -120,14 +99,11 @@ func main() {
 	allSystems = append(allSystems, systems.NewPlayerInputSystem(window.GlfwWindow))
 	allSystems = append(allSystems, systems.NewParticleCleanupSystem())
 	allSystems = append(allSystems, systems.NewParticleEmitterSystem())
+	allSystems = append(allSystems, systems.NewCollisionSystem())
 
 	for !window.GlfwWindow.ShouldClose() {
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-		// Render
-		shaderProgram.Use()
-		gl.BindVertexArray(vao)
 
 		for _, system := range allSystems {
 			system.Update(&w)
@@ -137,14 +113,4 @@ func main() {
 		window.GlfwWindow.SwapBuffers()
 		glfw.PollEvents()
 	}
-}
-
-var flatMeshVertices = []float32{
-	-1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, 1.0, 0.0,
-
-	1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, 0.0, 1.0,
 }

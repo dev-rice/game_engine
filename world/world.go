@@ -43,6 +43,9 @@ type ParticleComponent struct {
 	DestroyWhenOffScreen bool
 }
 
+type CollisionComponent struct {
+}
+
 type World struct {
 	MaxEntities               uint64
 	PositionComponents        []PositionComponent
@@ -89,7 +92,7 @@ func (w *World) EntitySatisfiesMask(entity uint64, mask uint64) bool {
 
 func (w *World) CreateLaser(position PositionComponent, texture texture.Texture) uint64 {
 	entity := w.CreateEntity()
-	w.mask[entity] = components.COMPONENT_POSITION | components.COMPONENT_SCALE | components.COMPONENT_VELOCITY | components.COMPONENT_SPRITE | components.COMPONENT_PARTICLE
+	w.mask[entity] = components.COMPONENT_POSITION | components.COMPONENT_SCALE | components.COMPONENT_VELOCITY | components.COMPONENT_SPRITE | components.COMPONENT_PARTICLE | components.COMPONENT_COLLISION
 	w.PositionComponents[entity] = position
 	w.VelocityComponents[entity] = VelocityComponent{X: 0, Y: 2}
 	w.ScaleComponents[entity] = ScaleComponent{X: 0.0025, Y: 0.0075}
@@ -114,7 +117,7 @@ func (w *World) CreatePlayerSpaceship(t *texture.Texture, laserTexture *texture.
 
 func (w *World) CreateEnemyFighter(t *texture.Texture) uint64 {
 	entity := w.CreateEntity()
-	w.mask[entity] = components.COMPONENT_POSITION | components.COMPONENT_VELOCITY | components.COMPONENT_SCALE | components.COMPONENT_SPRITE
+	w.mask[entity] = components.COMPONENT_POSITION | components.COMPONENT_VELOCITY | components.COMPONENT_SCALE | components.COMPONENT_SPRITE | components.COMPONENT_COLLISION
 	w.PositionComponents[entity] = PositionComponent{X: getRandomFloatInGLScreenSpace(), Y: getRandomFloatInGLScreenSpace()}
 	w.VelocityComponents[entity] = VelocityComponent{X: 0, Y: 0}
 	w.ScaleComponents[entity] = ScaleComponent{X: 0.0375, Y: 0.05}

@@ -10,17 +10,51 @@ import (
 
 type RenderSystem struct {
 	shader shader.ShaderProgram
+	vao    uint32
+}
+
+var flatMeshVertices = []float32{
+	-1.0, 1.0, 0.0, 1.0,
+	1.0, 1.0, 1.0, 1.0,
+	1.0, -1.0, 1.0, 0.0,
+
+	1.0, -1.0, 1.0, 0.0,
+	-1.0, -1.0, 0.0, 0.0,
+	-1.0, 1.0, 0.0, 1.0,
 }
 
 func NewRenderSystem(s shader.ShaderProgram) *RenderSystem {
+	// Configure the vertex data
+	var vao uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.BindVertexArray(vao)
+
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(flatMeshVertices)*4, gl.Ptr(flatMeshVertices), gl.STATIC_DRAW)
+
+	posAttrib := uint32(s.GetAttribLocation("position"))
+	gl.EnableVertexAttribArray(posAttrib)
+	gl.VertexAttribPointer(posAttrib, 2, gl.FLOAT, false, 4*4, gl.PtrOffset(0))
+
+	texcoordAttrib := uint32(s.GetAttribLocation("texcoord"))
+	gl.EnableVertexAttribArray(texcoordAttrib)
+	gl.VertexAttribPointer(texcoordAttrib, 2, gl.FLOAT, false, 4*4, gl.PtrOffset(2*4))
+
 	return &RenderSystem{
 		shader: s,
+		vao:    vao,
 	}
 }
 
 // The Draw System
 // A system is just a function and a mask on which it operates
 func (r *RenderSystem) Update(w *world.World) {
+	// Render
+	r.shader.Use()
+	gl.BindVertexArray(r.vao)
+
 	drawableMask := components.COMPONENT_POSITION | components.COMPONENT_SCALE | components.COMPONENT_SPRITE
 	for entity := uint64(0); entity < w.MaxEntities; entity++ {
 		if w.EntitySatisfiesMask(entity, drawableMask) {
