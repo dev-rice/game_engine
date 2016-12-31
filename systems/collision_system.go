@@ -5,6 +5,7 @@ import (
 	"github.com/donutmonger/game_engine/components"
 	"github.com/donutmonger/game_engine/world"
 	"github.com/go-gl/mathgl/mgl32"
+	"time"
 )
 
 type CollisionSystem struct {
@@ -26,7 +27,7 @@ func (c *CollisionSystem) Update(w *world.World) {
 	for i := 0; i < len(collisionEntities); i++ {
 		for j := 0; j < len(collisionEntities); j++ {
 			if isColliding(w, uint64(i), uint64(j)) {
-				fmt.Printf("Collision occurred between %d and %d\n", i, j)
+				fmt.Printf("%s Collision occurred between %d and %d\n", time.Now().Format(time.ANSIC), i, j)
 			}
 		}
 	}
